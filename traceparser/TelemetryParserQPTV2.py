@@ -392,21 +392,18 @@ def display_results_v2(qpt_results: pd.DataFrame, show_debug: bool = False, show
     # Convert to mW and format output
     filtered_results["Power (mW)"] = (filtered_results["power_w"] * 1000.0).round(1)
     
-    # Create final display dataframe
-    final_df = pd.DataFrame({
+    # Create simplified display dataframe with only Channel and Power
+    simple_df = pd.DataFrame({
         "Channel": filtered_results["channel_display_name"],
-        # "Channel ID": filtered_results["channel_hex"],
         "Power (mW)": filtered_results["Power (mW)"]
-        # "Has Name": filtered_results["has_name"],
-        # "Duration (s)": filtered_results["time_diff_s"].round(2)
     })
     
     # Sort by power consumption
-    final_df = final_df.sort_values("Power (mW)", ascending=False).reset_index(drop=True)
+    simple_df = simple_df.sort_values("Power (mW)", ascending=False).reset_index(drop=True)
     
     # Display summary with clear filtering status
-    total_channels = len(final_df)
-    named_channels = len(final_df[final_df["Has Name"] == True])
+    total_channels = len(filtered_results)
+    named_channels = len(filtered_results[filtered_results["has_name"] == True])
     unnamed_channels = total_channels - named_channels
     
     print(f"Power Analysis Results Summary:")
@@ -417,11 +414,12 @@ def display_results_v2(qpt_results: pd.DataFrame, show_debug: bool = False, show
     print(f"Unknown hex channels: {'Shown' if show_unknown_channels else 'Hidden (default)'}")
     print("-" * 50)
     
-    # Print DataFrame instead of using display()
-    print(final_df.to_string())
+    # Print simplified table with just Channel and Power
+    table_output = format_table_output(simple_df, "mW")
+    print(table_output)
     
     if return_df:
-        return final_df
+        return filtered_results
 
 
 def plot_rails_power_bokeh_v2(qpt_df, min_power_w=0, palette_name='viridis', 
