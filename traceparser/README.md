@@ -1,141 +1,188 @@
-# Telemetry Parser - Power Analysis Tool
+# QPT Telemetry Parser - Power Analysis Tool
 
-A standalone Python tool for analyzing power telemetry data from QPT (Qualcomm Power Telemetry) traces and UDAS (Universal Data Acquisition System) logs.
+A specialized Python tool for analyzing QPT (Qualcomm Power Telemetry) data from ftrace files. This tool parses power telemetry events, calculates average power consumption per channel, and generates comprehensive analysis reports.
 
-## Features
+## 🚀 Features
 
-- Parse QPT data from ftrace files
-- Calculate average power consumption per channel
-- Compare QPT measurements with UDAS data (if available)
-- Export results to CSV
-- Pretty-printed console output with summary statistics
+- **QPT Data Parsing**: Extract `qpt_data_update` events from ftrace files
+- **Power Calculation**: Calculate average power consumption using energy differential method
+- **Channel Mapping**: Automatic mapping of channel IDs to readable names and breakdown rails
+- **Multiple Output Formats**: 
+  - Pretty-printed console tables
+  - CSV export
+  - **Excel export with multiple sheets** (NEW!)
+- **Comprehensive Statistics**: Total power, channel count, averages, and max power analysis
+- **Debug Channel Filtering**: Automatically excludes debug channels from final results
 
-## Installation
+## 📋 Supported Channels
 
-### Install Required Dependencies
+The tool includes predefined mappings for 21 channels:
+- **CPU**: APC0_CX, APC0_MX, APC1_CX, APC1_MX (cpu-m, cpu-l clusters)
+- **GPU**: GFX, GFX_MXC (gpu, gpu-spare)
+- **NSP**: NSP1_CX, NSP2_CX (nsp, nsp-spare)
+- **Debug**: debug-0 through debug-12 (filtered from output)
+
+## 🛠️ Installation
+
+### Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Optional: UDAS Libraries
+## 📖 Usage
 
-If you have access to LISA UDAS libraries, install them according to your organization's instructions. The tool will work without UDAS, performing QPT-only analysis.
+### Method 1: Edit Script Configuration
 
-## Usage
-
-### Method 1: Edit the script directly
-
-Edit the default paths in `TelemetryParser.py`:
+Edit the default path in `TelemetryParserQPT.py`:
 
 ```python
 TRACE_PATH = r"C:\path\to\your\Default_ftrace.txt"
-UDAS_BASE_DIR = r"C:\path\to\your\power\directory"
-OUTPUT_FILE = "results.csv"  # Optional
+OUTPUT_FILE = None  # Optional CSV output
 ```
 
 Then run:
 
 ```bash
-python TelemetryParser.py
+python TelemetryParserQPT.py
 ```
 
 ### Method 2: Command Line Arguments
 
 ```bash
-python TelemetryParser.py <trace_path> [udas_base_dir] [output_csv]
+python TelemetryParserQPT.py <trace_path> [output_csv]
 ```
 
 **Examples:**
 
 ```bash
-# QPT analysis only
-python TelemetryParser.py "C:\traces\Default_ftrace.txt"
-
-# QPT + UDAS analysis
-python TelemetryParser.py "C:\traces\Default_ftrace.txt" "C:\power\1"
+# Basic QPT analysis
+python TelemetryParserQPT.py "C:\traces\Default_ftrace.txt"
 
 # Save results to CSV
-python TelemetryParser.py "C:\traces\Default_ftrace.txt" "C:\power\1" "results.csv"
+python TelemetryParserQPT.py "C:\traces\Default_ftrace.txt" "results.csv"
 ```
 
-## Output
+## 📊 Output Formats
 
-The tool generates:
-
-1. **Console Output**: Pretty-printed table with:
-   - Channel names
-   - Channel IDs
-   - QPT Power (mW)
-   - UDAS Power (mW) - if available
-   - Power rail mappings
-   - Difference calculations
-
-2. **Summary Statistics**:
-   - Total QPT Power
-   - Total UDAS Power (if available)
-   - Total Difference
-
-3. **CSV Export** (optional):
-   - All results saved to specified file
-
-### Sample Output
+### 1. Console Output
+Pretty-printed table showing:
+- Channel names
+- QPT Power (mW)
+- Summary statistics
 
 ```
 ================================================================================
-POWER ANALYSIS RESULTS
+QPT POWER ANALYSIS RESULTS
 ================================================================================
 
-+----------+-------------+----------------+-----------------+----------------+------------+
-| Channel  | Channel ID  | QPT Power (mW) | UDAS Power (mW) | Breakdown Rail | UDAS Rail  |
-+==========+=============+================+=================+================+============+
-| cpu-m    | 0x6b6       | 1234.5         | 1250.3          | APC0_CX        | APC0_CX    |
-| cpu-l    | 0x89e       | 987.6          | 995.2           | APC1_CX        | APC1_CX    |
-| gpu      | 0x59b       | 543.2          | 550.1           | GFX            | GFX        |
-+----------+-------------+----------------+-----------------+----------------+------------+
+┌─────────┬─────────────────┐
+│ Channel │ QPT Power (mW)  │
+├─────────┼─────────────────┤
+│ gpu     │ 1234.5          │
+│ cpu-l   │ 567.8           │
+│ nsp     │ 123.4           │
+└─────────┴─────────────────┘
 
 ================================================================================
 SUMMARY STATISTICS
 ================================================================================
-Total QPT Power: 2765.3 mW
-Total UDAS Power: 2795.6 mW
-Total Difference: 30.3 mW
+Total QPT Power: 1925.7 mW
+Number of Channels: 3
+Average Power per Channel: 641.9 mW
+Max Power Channel: gpu (1234.5 mW)
 ================================================================================
+
+Excel results saved to: QPT_Power_Analysis_20241210_143052.xlsx
 ```
 
-## Channel Mapping
+### 2. Excel Output (Automatic)
+Every analysis automatically generates a timestamped Excel file with:
 
-The tool includes predefined channel mappings for:
-- CPU clusters (gold/prime)
-- GPU
-- NSP (Neural Signal Processor)
-- Debug channels
+**Sheet 1 - QPT_Results:**
+- Channel names and power values
+- Formatted columns with proper widths
 
-Mappings can be customized by editing the `channel_mapping` DataFrame in the script.
+**Sheet 2 - Summary:**
+- Total QPT Power
+- Number of channels
+- Average power per channel
+- Maximum power channel and value
 
-## Troubleshooting
+### 3. CSV Output (Optional)
+Simple CSV format for further data processing
+
+## ⚙️ How It Works
+
+### 1. Data Parsing
+- Uses regex patterns to extract QPT events from ftrace logs
+- Handles both formats: with and without Channel_Name field
+- Extracts: timestamp, channel_hex, channel_name, energy_uj, avg_power_uw
+
+### 2. Channel Mapping
+- Maps channel IDs to readable names using predefined mapping table
+- Fills missing channel names automatically
+- Associates channels with breakdown rails (APC0_CX, GFX, etc.)
+
+### 3. Power Calculation
+- Uses energy differential method: `Power = (Energy_end - Energy_start) / Time_diff`
+- Filters unreasonable values (0-100W range)
+- Converts from microjoules to watts
+
+### 4. Result Processing
+- Filters out debug channels
+- Sorts by power consumption (highest first)
+- Generates comprehensive statistics
+
+## 🔧 Customization
+
+### Adding New Channels
+Edit the `channel_mapping` DataFrame in the script:
+
+```python
+channel_mapping = pd.DataFrame({
+    'Channel_name': ['your-channel'],
+    'Channel_ID': ['0xabc'],
+    'Breakdown_rail': ['YOUR_RAIL']
+})
+```
+
+### Adjusting Power Limits
+Modify the power validation in `calculate_rail_power()`:
+
+```python
+if 0 <= power_w <= 100:  # Adjust upper limit as needed
+```
+
+## 🐛 Troubleshooting
 
 ### "No QPT data events found"
-- Verify the trace file path is correct
-- Check that the trace file contains `qpt_data_update` events
-- Ensure the file is not corrupted
+- Verify trace file path is correct
+- Check that file contains `qpt_data_update` events
+- Ensure file is readable (not corrupted)
 
-### "UDAS libraries not available"
-- This is normal if LISA UDAS is not installed
-- The tool will continue with QPT-only analysis
+### "Could not calculate power"
+- Check if trace contains sufficient data points
+- Verify timestamps are valid
+- Ensure energy values are reasonable
 
-### "File not found" errors
-- Check all paths use correct Windows format (backslashes or raw strings)
-- Verify directories exist and are accessible
+### Excel save errors
+- Check write permissions in current directory
+- Ensure openpyxl is installed: `pip install openpyxl`
 
-## Requirements
+## 📋 Requirements
 
 - Python 3.7+
-- pandas
-- numpy
-- tabulate
-- LISA UDAS libraries (optional)
+- pandas >= 1.3.0
+- numpy >= 1.20.0
+- tabulate >= 0.8.9
+- openpyxl >= 3.0.0 (for Excel export)
 
-## License
+## 🔄 Version History
+
+- **v1.1**: Added Excel export with multiple sheets
+- **v1.0**: Initial QPT-only analysis with console and CSV output
+
+## 📄 License
 
 Internal tool - check with your organization for usage rights.

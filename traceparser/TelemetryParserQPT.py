@@ -169,11 +169,9 @@ def display_results(qpt_results: pd.DataFrame, qpt_full: pd.DataFrame, output_fi
     # Convert to mW
     merged["QPT Power (mW)"] = merged["power_w"] * 1000.0
     
-    # Format Output
+    # Format Output - Only show Channel and QPT Power
     output_columns = {
         "Channel": merged["channel_name"],
-        "Channel ID": merged["Channel_ID"].fillna(""),
-        "Breakdown Rail": merged["Breakdown_rail"].fillna(""),
         "QPT Power (mW)": merged["QPT Power (mW)"].round(1)
     }
     
@@ -212,6 +210,49 @@ def display_results(qpt_results: pd.DataFrame, qpt_full: pd.DataFrame, output_fi
     if output_file:
         final_df.to_csv(output_file, index=False)
         print(f"Results saved to: {output_file}\n")
+    
+    # Always save to Excel with timestamp
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    excel_filename = f"QPT_Power_Analysis_{timestamp}.xlsx"
+    
+    try:
+        # Create Excel file with formatting
+        with pd.ExcelWriter(excel_filename, engine='openpyxl') as writer:
+            # Write main results
+            final_df.to_excel(writer, sheet_name='QPT_Results', index=False)
+            
+            # Write summary statistics
+            summary_data = {
+                'Metric': ['Total QPT Power (mW)', 'Number of Channels', 'Average Power per Channel (mW)', 'Max Power Channel', 'Max Power Value (mW)'],
+                'Value': [
+                    f"{final_df['QPT Power (mW)'].sum():.1f}",
+                    str(len(final_df)),
+                    f"{final_df['QPT Power (mW)'].mean():.1f}",
+                    final_df.iloc[0]['Channel'],
+                    f"{final_df.iloc[0]['QPT Power (mW)']:.1f}"
+                ]
+            }
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            
+            # Format the Excel sheets
+            workbook = writer.book
+            
+            # Format QPT_Results sheet
+            worksheet1 = writer.sheets['QPT_Results']
+            worksheet1.column_dimensions['A'].width = 20
+            worksheet1.column_dimensions['B'].width = 18
+            
+            # Format Summary sheet
+            worksheet2 = writer.sheets['Summary']
+            worksheet2.column_dimensions['A'].width = 30
+            worksheet2.column_dimensions['B'].width = 20
+        
+        print(f"Excel results saved to: {excel_filename}\n")
+        
+    except Exception as e:
+        print(f"Warning: Could not save Excel file: {e}\n")
     
     return final_df
 
@@ -252,7 +293,8 @@ if __name__ == "__main__":
     # ==========================================
     
     # Default paths (can be overridden by command line arguments)
-    TRACE_PATH = r"C:\Project\telemetry\tencentvideo_new_20251210\ftrace\1\Default_ftrace.txt"
+    TRACE_PATH = r"C:\Project\DoU\CASE01_ftrace.txt"
+    # TRACE_PATH = r"C:\Project\telemetry\tencentvideo_new_20251210\ftrace\1\Default_ftrace.txt"
     OUTPUT_FILE = None  # Set to a path like "results.csv" to save output
     
     # Parse command line arguments if provided
