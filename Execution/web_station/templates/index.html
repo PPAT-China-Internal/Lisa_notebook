@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DOU Trend Update Workstation</title>
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────────────────── */
+    :root {
+      --primary:       #244062;
+      --primary-light: #2e5c8a;
+      --accent:        #99CC00;
+      --accent-dark:   #7aaa00;
+      --bg:            #eef1f5;
+      --card:          #ffffff;
+      --border:        #d8dde6;
+      --text:          #1a2035;
+      --muted:         #6b7a99;
+      --success:       #27ae60;
+      --error:         #e74c3c;
+      --warn:          #f39c12;
+      --yellow:        #FFFF99;
+      --radius:        10px;
+      --shadow:        0 2px 12px rgba(0,0,0,.09);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────── */
+    .header {
+      background: var(--primary);
+      color: #fff;
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.25);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-logo { font-size: 26px; line-height: 1; }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: .3px; }
+    .header-sub   { font-size: 12px; opacity: .75; margin-top: 2px; }
+    .header-chip  {
+      margin-left: auto;
+      background: var(--accent);
+      color: #1a2035;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .4px;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      padding: 20px 24px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+    /* ── Card ──────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+    .card:last-child { margin-bottom: 0; }
+    .card-head {
+      background: var(--primary);
+      color: #fff;
+      padding: 12px 18px;
+      font-weight: 600;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-head .badge {
+      margin-left: auto;
+      background: rgba(255,255,255,.18);
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+    .card-body { padding: 18px; }
+
+    /* ── Form ──────────────────────────────────────────────────────────── */
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 5px;
+    }
+    .field input, .field textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-size: 13px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: #fafbfc;
+      color: var(--text);
+      transition: border-color .2s, box-shadow .2s;
+      resize: vertical;
+    }
+    .field input:focus, .field textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(36,64,98,.12);
+      background: #fff;
+    }
+    .field .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* ── Buttons ───────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border: none;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .18s, transform .1s, box-shadow .18s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:active:not(:disabled) { transform: scale(.97); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+      padding: 12px;
+      font-size: 14px;
+      box-shadow: 0 2px 8px rgba(36,64,98,.3);
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-light); }
+    .btn-sm {
+      background: #f0f3f8;
+      color: var(--text);
+      padding: 7px 13px;
+      font-size: 12px;
+    }
+    .btn-sm:hover { background: #e2e8f0; }
+    .btn-dl {
+      background: var(--accent);
+      color: #1a2035;
+      box-shadow: 0 2px 6px rgba(153,204,0,.35);
+    }
+    .btn-dl:hover { background: var(--accent-dark); }
+
+    /* ── Build browser ─────────────────────────────────────────────────── */
+    .browser-wrap {
+      display: none;
+      margin-top: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .browser-wrap.open { display: block; }
+    .browser-head {
+      background: #f5f7fb;
+      padding: 7px 13px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .browser-list { max-height: 210px; overflow-y: auto; }
+    .browser-item {
+      padding: 8px 13px;
+      font-size: 12px;
+      font-family: 'Consolas', monospace;
+      cursor: pointer;
+      border-bottom: 1px solid #f2f4f8;
+      transition: background .12s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .browser-item:hover { background: #e8f0fe; }
+    .browser-item .bi-dot { color: var(--accent); font-size: 18px; }
+
+    /* ── Divider ───────────────────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+    /* ── Steps ─────────────────────────────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 7px; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 10px 13px;
+      border-radius: 8px;
+      background: #f5f7fb;
+      transition: background .25s;
+    }
+    .step.running { background: #e3f0fd; }
+    .step.done    { background: #eafaf1; }
+    .step.error   { background: #fdf0ef; }
+    .step-icon { font-size: 17px; margin-top: 1px; flex-shrink: 0; }
+    .step-name { font-weight: 600; font-size: 13px; }
+    .step-detail { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; }
+
+    /* ── Metrics grid ──────────────────────────────────────────────────── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 16px 0;
+    }
+    @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2,1fr); } }
+    .metric {
+      background: #f5f7fb;
+      border-radius: 8px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .metric-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+    .metric-lbl {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-top: 4px;
+    }
+    .metric-delta { font-size: 12px; font-weight: 700; margin-top: 5px; }
+    .neg { color: var(--success); }
+    .pos { color: var(--error); }
+
+    /* ── Alert ─────────────────────────────────────────────────────────── */
+    .alert {
+      padding: 11px 15px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+    }
+    .alert-ok  { background: #eafaf1; color: #1a6b3c; border-left: 4px solid var(--success); }
+    .alert-err { background: #fdf0ef; color: #922b21; border-left: 4px solid var(--error); }
+
+    /* ── Table ─────────────────────────────────────────────────────────── */
+    .tbl-wrap {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 14px;
+      text-align: right;
+      font-weight: 600;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+    }
+    thead th:first-child { text-align: left; }
+    tbody td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #f0f2f7;
+      text-align: right;
+      white-space: nowrap;
+    }
+    tbody td:first-child { text-align: left; font-weight: 500; }
+    tbody tr:hover td { background: #f5f7fb; }
+    tbody tr.dou td {
+      background: var(--yellow) !important;
+      font-weight: 700;
+      border-top: 2px solid var(--primary);
+    }
+    .d-neg { color: var(--success); font-weight: 700; }
+    .d-pos { color: var(--error);   font-weight: 700; }
+
+    /* ── Empty state ───────────────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 70px 20px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 52px; margin-bottom: 14px; }
+    .empty-text { font-size: 14px; line-height: 1.6; }
+
+    /* ── Spinner ───────────────────────────────────────────────────────── */
+    .spin {
+      display: inline-block;
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    .spin-dark {
+      border-color: rgba(0,0,0,.15);
+      border-top-color: var(--primary);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Info card ─────────────────────────────────────────────────────── */
+    .info-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+    .info-key { color: var(--muted); min-width: 70px; font-weight: 600; }
+    .info-val { font-family: 'Consolas', monospace; word-break: break-all; }
+
+    /* ── Section separator ─────────────────────────────────────────────── */
+    .section-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 22px 0 18px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Table toolbar ─────────────────────────────────────────────────── */
+    .tbl-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .tbl-title { font-size: 13px; font-weight: 700; }
+
+    /* ── Delta badge ───────────────────────────────────────────────────── */
+    .delta-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .delta-badge.neg { background: #d5f5e3; color: #1a6b3c; }
+    .delta-badge.pos { background: #fde8e8; color: #922b21; }
+    .delta-badge.neu { background: #f0f3f8; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-logo">📊</div>
+  <div>
+    <div class="header-title">DOU Trend Update Workstation</div>
+    <div class="header-sub">Hawi GDoUv6 Power Breakdown — Append New Build</div>
+  </div>
+  <div class="header-chip">SM8975 GDoUv6</div>
+</header>
+
+<!-- ── Main layout ─────────────────────────────────────────────────────────── -->
+<div class="layout">
+
+  <!-- ── Left: Input panel ─────────────────────────────────────────────────── -->
+  <div>
+    <div class="card">
+      <div class="card-head">📁 Build Configuration</div>
+      <div class="card-body">
+
+        <div class="field">
+          <label>PowerFtrace Folder Path</label>
+          <textarea id="buildPath" rows="3"
+            placeholder="\\grilled\ptt_china_la_golden\PT\HAWI\Hawi.LA.1.0-00510-PERF.AL-3\PowerFtrace"></textarea>
+          <div class="hint">
+            Paste the <strong>PowerFtrace folder path</strong> — do <em>not</em> include the filename.<br>
+            ✅ <code>…\Hawi.LA.1.0-00541-PERF.INT-1\PowerFtrace</code><br>
+            ❌ <code>…\PowerFtrace\SM8975_GDoUv6_Power_Breakdown_template_v2 (Output).xlsx</code>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-sm" id="browseBtn" onclick="listBuilds()">🔍 Browse Builds</button>
+          <button class="btn btn-sm" onclick="closeBrowser()">✕ Close</button>
+        </div>
+
+        <div class="browser-wrap" id="browserWrap">
+          <div class="browser-head">Available builds — click to select</div>
+          <div class="browser-list" id="browserList"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field">
+          <label>Build Label</label>
+          <input type="text" id="buildLabel" placeholder="M510_0317" />
+          <div class="hint">Format: M&lt;build_number&gt;_&lt;date&gt;&nbsp;&nbsp;e.g. M510_0317</div>
+        </div>
+
+        <button class="btn btn-primary" id="runBtn" onclick="runAppend()">
+          ▶&nbsp; Run Update
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Info card -->
+    <div class="card">
+      <div class="card-head">ℹ️ File Reference</div>
+      <div class="card-body">
+        <div class="info-row">
+          <span class="info-key">Target</span>
+          <span class="info-val">Hawi_GDoUv6_Exec_Progress_Joy.xlsx</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Source</span>
+          <span class="info-val">SM8975_GDoUv6_Power_Breakdown_template_v2 (Output).xlsx</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Sheet</span>
+          <span class="info-val">DOU_Trend — 46 columns per build block</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">DoU Row</span>
+          <span class="info-val">Row 32 — raw weighted sum Σ(w × v)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: Results panel ──────────────────────────────────────────────── -->
+  <div>
+    <div class="card">
+      <div class="card-head">
+        📈 Results
+        <span id="resultBadge" class="badge" style="display:none;"></span>
+      </div>
+      <div class="card-body" id="resultsBody">
+        <div class="empty">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">
+            Enter the PowerFtrace path and build label,<br>
+            then click <strong>Run Update</strong> to append the new build.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /layout -->
+
+<script>
+/* ── Globals ──────────────────────────────────────────────────────────────── */
+const SERVER_BASE = String.raw`\\grilled\ptt_china_la_golden\PT\HAWI`;
+let lastBuildLabel = '';
+
+/* ── Browse builds ────────────────────────────────────────────────────────── */
+async function listBuilds() {
+  const btn = document.getElementById('browseBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin spin-dark"></span> Loading…';
+
+  try {
+    const resp = await fetch('/api/list-builds');
+    const data = await resp.json();
+    const list = document.getElementById('browserList');
+
+    if (data.success && data.builds.length > 0) {
+      list.innerHTML = data.builds.map(b =>
+        `<div class="browser-item" onclick="selectBuild('${escHtml(b)}')">
+           <span>📦</span><span>${escHtml(b)}</span>
+         </div>`
+      ).join('');
+    } else {
+      list.innerHTML = `<div style="padding:12px;color:var(--muted);font-size:12px;">
+        ${escHtml(data.error || 'No builds found or server not accessible')}
+      </div>`;
+    }
+    document.getElementById('browserWrap').classList.add('open');
+  } catch (e) {
+    alert('Failed to reach server: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Browse Builds';
+  }
+}
+
+function closeBrowser() {
+  document.getElementById('browserWrap').classList.remove('open');
+}
+
+function selectBuild(buildName) {
+  const path = SERVER_BASE + '\\' + buildName + '\\PowerFtrace';
+  document.getElementById('buildPath').value = path;
+
+  // Auto-suggest label from build number + today's date
+  const m = buildName.match(/(\d{5})/);
+  if (m) {
+    const num = parseInt(m[1], 10);
+    const now = new Date();
+    const mm  = String(now.getMonth() + 1).padStart(2, '0');
+    const dd  = String(now.getDate()).padStart(2, '0');
+    document.getElementById('buildLabel').value = `M${num}_${mm}${dd}`;
+  }
+  closeBrowser();
+}
+
+/* ── Run append ───────────────────────────────────────────────────────────── */
+async function runAppend() {
+  const buildPath  = document.getElementById('buildPath').value.trim();
+  const buildLabel = document.getElementById('buildLabel').value.trim();
+
+  if (!buildPath)  { alert('Please enter the PowerFtrace folder path.'); return; }
+  if (!buildLabel) { alert('Please enter the build label.'); return; }
+
+  lastBuildLabel = buildLabel;
+
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled = true;
+  runBtn.innerHTML = '<span class="spin"></span> Processing…';
+
+  // Show loading state
+  document.getElementById('resultsBody').innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+        Processing build: <strong>${escHtml(buildLabel)}</strong>
+      </div>
+      <div class="steps">
+        <div class="step running">
+          <div class="step-icon">⏳</div>
+          <div><div class="step-name">Connecting to server and copying file…</div></div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('resultBadge').style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/append-build', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ build_path: buildPath, build_label: buildLabel }),
+    });
+    const data = await resp.json();
+    renderResults(data);
+  } catch (e) {
+    document.getElementById('resultsBody').innerHTML = `
+      <div class="alert alert-err">⚠️ <strong>Connection error:</strong> ${escHtml(e.message)}</div>`;
+  } finally {
+    runBtn.disabled = false;
+    runBtn.innerHTML = '▶&nbsp; Run Update';
+  }
+}
+
+/* ── Render results ───────────────────────────────────────────────────────── */
+function renderResults(data) {
+  const body  = document.getElementById('resultsBody');
+  const badge = document.getElementById('resultBadge');
+  let html = '';
+
+  /* Steps */
+  if (data.steps && data.steps.length) {
+    html += '<div class="steps" style="margin-bottom:18px;">';
+    for (const s of data.steps) {
+      const icon = s.status === 'done' ? '✅' : s.status === 'error' ? '❌' : '⏳';
+      html += `
+        <div class="step ${s.status}">
+          <div class="step-icon">${icon}</div>
+          <div>
+            <div class="step-name">Step ${s.id}: ${escHtml(s.name)}</div>
+            ${s.detail ? `<div class="step-detail">${escHtml(s.detail)}</div>` : ''}
+          </div>
+        </div>`;
+    }
+    html += '</div>';
+  }
+
+  if (!data.success) {
+    html += `<div class="alert alert-err">⚠️ <strong>Error:</strong> ${escHtml(data.error)}</div>`;
+    body.innerHTML = html;
+    badge.style.display = 'none';
+    return;
+  }
+
+  /* Success banner */
+  const r = data.result;
+  html += `
+    <div class="alert alert-ok">
+      ✅ Build <strong>${escHtml(r.build_label)}</strong> appended at column
+      <strong>${escHtml(r.column_letter)}</strong> (col ${r.column})
+    </div>`;
+
+  /* ── Metrics (2 rows × 3 cols) ─────────────────────────────────────── */
+  const dSign    = r.dou_delta      !== null ? (r.dou_delta      >= 0 ? '+' : '') : '';
+  const dCls     = r.dou_delta      !== null ? (r.dou_delta      <  0 ? 'neg' : 'pos') : '';
+  const dpSign   = r.dou_delta_proj !== null ? (r.dou_delta_proj >= 0 ? '+' : '') : '';
+  const dpCls    = r.dou_delta_proj !== null ? (r.dou_delta_proj <  0 ? 'neg' : 'pos') : '';
+  html += `
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-val">${r.measured_ucs}</div>
+        <div class="metric-lbl">Measured UCs</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">${(r.total_weight * 100).toFixed(1)}%</div>
+        <div class="metric-lbl">Total Weight</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">${r.dou_current !== null ? r.dou_current.toFixed(2) : '—'}</div>
+        <div class="metric-lbl">DoU Current (mA)</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">${r.dou_previous !== null ? r.dou_previous.toFixed(2) : '—'}</div>
+        <div class="metric-lbl">Previous DoU (mA)</div>
+        ${r.dou_delta !== null
+          ? `<div class="metric-delta ${dCls}">${dSign}${r.dou_delta.toFixed(2)} vs current</div>`
+          : ''}
+      </div>
+      <div class="metric">
+        <div class="metric-val">${r.proj_dou !== null ? r.proj_dou.toFixed(2) : '—'}</div>
+        <div class="metric-lbl">Projection DoU (mA)</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val ${dpCls}" style="font-size:20px;">
+          ${r.dou_delta_proj !== null ? dpSign + r.dou_delta_proj.toFixed(2) : '—'}
+        </div>
+        <div class="metric-lbl">Δ Current vs Projection</div>
+      </div>
+    </div>`;
+
+  /* ── Section 1: Battery Adjusted comparison (prev vs current) ────────── */
+  if (data.comparison && data.comparison.length) {
+    html += `
+      <div class="tbl-toolbar">
+        <div class="tbl-title">📋 Battery Adjusted — Current vs Previous Build</div>
+        <a href="/api/download" class="btn btn-dl">⬇ Download Excel</a>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>UC ID</th>
+              <th>Weight</th>
+              <th>Previous (mA)</th>
+              <th>${escHtml(r.build_label)} (mA)</th>
+              <th>Δ vs Prev</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+    for (const row of data.comparison) {
+      const wt  = typeof row.weight   === 'number' ? (row.weight * 100).toFixed(2) + '%' : (row.weight || '—');
+      const prv = typeof row.previous === 'number' ? row.previous.toFixed(2) : '—';
+      const nw  = typeof row.new      === 'number' ? row.new.toFixed(2)      : '—';
+      let deltaHtml = '—';
+      if (row.delta !== null && row.delta !== undefined) {
+        const cls  = row.delta < 0 ? 'd-neg' : 'd-pos';
+        const sign = row.delta >= 0 ? '+' : '';
+        deltaHtml  = `<span class="${cls}">${sign}${row.delta.toFixed(2)}</span>`;
+      }
+      html += `
+        <tr class="${row.is_dou ? 'dou' : ''}">
+          <td>${escHtml(row.uc_id)}</td>
+          <td>${wt}</td>
+          <td>${prv}</td>
+          <td>${nw}</td>
+          <td>${deltaHtml}</td>
+        </tr>`;
+    }
+    html += '</tbody></table></div>';
+
+    /* ── Section 2: Delta vs Projection ─────────────────────────────────── */
+    html += `
+      <div class="section-sep"></div>
+      <div class="section-title">📐 Battery Adjusted — Current vs Projection</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>UC ID</th>
+              <th>Weight</th>
+              <th>Projection (mA)</th>
+              <th>${escHtml(r.build_label)} (mA)</th>
+              <th>Δ vs Projection</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+    for (const row of data.comparison) {
+      const wt   = typeof row.weight    === 'number' ? (row.weight * 100).toFixed(2) + '%' : (row.weight || '—');
+      const proj = typeof row.proj_batt === 'number' ? row.proj_batt.toFixed(2) : '—';
+      const nw   = typeof row.new       === 'number' ? row.new.toFixed(2)       : '—';
+      let dpHtml = '—';
+      if (row.delta_proj !== null && row.delta_proj !== undefined) {
+        const cls  = row.delta_proj < 0 ? 'd-neg' : 'd-pos';
+        const sign = row.delta_proj >= 0 ? '+' : '';
+        dpHtml     = `<span class="${cls}">${sign}${row.delta_proj.toFixed(2)}</span>`;
+      }
+      html += `
+        <tr class="${row.is_dou ? 'dou' : ''}">
+          <td>${escHtml(row.uc_id)}</td>
+          <td>${wt}</td>
+          <td>${proj}</td>
+          <td>${nw}</td>
+          <td>${dpHtml}</td>
+        </tr>`;
+    }
+    html += '</tbody></table></div>';
+  }
+
+  body.innerHTML = html;
+
+  /* Badge */
+  badge.textContent = r.build_label;
+  badge.style.display = '';
+}
+
+/* ── Utility ──────────────────────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>

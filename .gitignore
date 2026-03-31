@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.ipynb_checkpoints/
+
+# Excel data files (large binaries — not tracked)
+*.xlsx
+*.xls
+# Exception: keep template/reference files if needed
+# !Execution/some_template.xlsx
+
+# Temp / lock files
+~$*
+*.tmp
+tmp_read.txt
+
+# Cache
+.CASE01_ftrace.txt.cache/
+
+# OS
+.DS_Store
+Thumbs.db

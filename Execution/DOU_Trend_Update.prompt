@@ -1,0 +1,189 @@
+---
+name: GDoU Workflow - DOU Trend Update
+---
+
+<task name="Append New Build Data to DOU Trend Exec Progress">
+
+<task_objective>
+Append a new Hawi build's per-UC power breakdown data to the right of the existing build columns in the DOU Trend Exec Progress spreadsheet (Hawi_GDoUv6_Exec_Progress_Joy.xlsx). The workflow collects the build server path and build label from the user, copies the Power Breakdown Output file locally via robocopy, reads the Summary sheet, and appends a new 46-column block to the DOU_Trend sheet with full cell formatting matching the existing table style (colors, fonts, borders, number formats, column widths). The DoU Current row is calculated as a raw weighted sum (Σ weight × value) across all measured UCs. A per-UC Battery Adjusted comparison table is printed to confirm the result.
+</task_objective>
+
+<detailed_sequence_steps>
+
+## 1. Gather Input Information
+
+1. Use the `ask_followup_question` tool to collect the **PowerFtrace folder path** of the new build on the server.
+   - Example: `\\grilled\ptt_china_la_golden\PT\HAWI\Hawi.LA.1.0-00510-PERF.AL-3\PowerFtrace`
+   - The folder must contain: `SM8975_GDoUv6_Power_Breakdown_template_v2 (Output).xlsx`
+   - To list available builds, run:
+     ```cmd
+     cmd /c "dir \\grilled\ptt_china_la_golden\PT\HAWI /b"
+     ```
+
+2. Use the `ask_followup_question` tool to collect the **build label** to use as the column header.
+   - Naming convention: `M<build_number>_<date>` (e.g., `M510_0317` for Build 00510, Mar 17)
+   - Existing labels already in the file: `M446_AU205`, `M446_0226`
+
+## 2. Copy the Output File Locally
+
+1. Use `robocopy` to copy the Power Breakdown Output file from the server path to the local `Execution\` directory:
+   ```cmd
+   robocopy "<build_path>" "c:\Project\DoU\Execution" "SM8975_GDoUv6_Power_Breakdown_template_v2 (Output).xlsx"
+   ```
+
+2. Verify the file was copied successfully by checking that `Execution\SM8975_GDoUv6_Power_Breakdown_template_v2 (Output).xlsx` exists.
+
+## 3. Read the Summary Sheet
+
+1. Open the copied file with `openpyxl` (`data_only=True`) and read the **`Summary`** sheet.
+
+2. The Summary sheet layout (0-indexed columns):
+   - Col 0 (A): TCID (Use Case ID)
+   - Col 1 (B): Weightage
+   - Col 2 (C): Battery Measured (raw, mA)
+   - Col 3 (D): Battery Adjusted (corrected, mA) ← **primary value used**
+   - Col 4–45 (E–AT): Power breakdown rails:
+     CX, MM CX, Display CX, Total MM CX, MXA, MXC, GFX, GFX MX, GFX BX, Total GFX,
+     Large CX, Medium-LP CX, Medium CX, Total Medium CX, Large MX, Medium-LP MX,
+     Medium MX, Total Medium MX, APC PLL, Total CPU, NSP1 CX, NSP2 CX,
+     VDD1, VDD2L, VDD2H, VDDQ, EBI, Total Memory, LPI CX, LPI MX,
+     Audio WCD, Audio SPKR, CSI, DSI, Storage, Peripherals, Connectivity,
+     Modem, RF, PMIC, Other, Chipset Unaccounted
+
+3. Build a dict mapping `TCID → row` for all data rows (Row 4 onward, 0-indexed row 3+).
+
+4. **A UC is considered measured if: `Battery Adjusted (col D) != 0`**
+
+## 4. Open the Exec Progress File and Detect Append Position
+
+1. Open `Execution/Hawi_GDoUv6_Exec_Progress_Joy.xlsx` with `openpyxl`.
+
+2. In the `DOU_Trend` sheet, each build occupies **46 columns**. Detect the next available start column:
+   - Scan Row 1 and Row 2 for the last non-empty cell to find `last_used_col`
+   - Calculate: `NEW_START = (last_used_col // 46 + 1) * 46 + 1`
+
+3. The new 46-column block structure (offsets from `NEW_START`, 1-indexed):
+
+   | Offset | Content |
+   |---|---|
+   | +0 | UC ID |
+   | +1 | Weightage |
+   | +2 | Battery Adjusted (mA) ← write build label in **Row 1** here |
+   | +3 to +44 | Power breakdown rails (CX … Chipset Unaccounted) |
+   | +45 | Empty (separator) |
+
+## 5. Write New Build Data with Formatting
+
+Apply the following cell styles to match the existing table appearance:
+
+| Area | Fill | Font | Border | Number Format |
+|---|---|---|---|---|
+| Row 1 — build label | Theme 5, tint 0.80 | Bold, 20pt, black | None | — |
+| Row 2, col +0 — section header | `#99CC00` (green) | Bold, 16pt, black | left/right/bottom thin | — |
+| Row 2, cols +1 to +44 — column headers | `#244062` (dark blue) | Bold, 11pt, white | left/right/bottom thin | — |
+| Rows 3–31, cols +0 and +1 — UC ID / weight | None | Bold, 12pt | all thin | `0.00%` for weight |
+| Rows 3–31, cols +2 to +44 — data values | None | 12pt, black | all thin | `0.0` |
+| Row 32, cols +0 and +1 — DoU Current label/weight | Theme 4, tint 0.60 | Bold, 12pt | all thin | `0.00%` for weight |
+| Row 32, cols +2 to +44 — DoU Current values | `#FFFF99` (yellow) | 12pt, black | all thin | `0.00` |
+
+Column widths for the new block:
+- Col +0 (UC ID): 36.18
+- Col +1 (Weightage): 11.82
+- Col +2 (Battery Adjusted): 10.18
+- Cols +3 to +44 (power rails): 13.0 each
+- Col +45 (separator): 8.0
+
+## 6. Calculate and Write DoU Current (Row 32)
+
+1. Collect all measured UCs: `Battery Adjusted != 0` AND `weight > 0`
+2. Write `'DoU Current'` at `NEW_START + 0`
+3. Write `total_weight = Σ weight_i` at `NEW_START + 1`
+4. For each component column (offsets +2 to +44):
+   - Calculate `wsum = Σ (weight_i × value_i)` — **raw weighted sum, do NOT divide by total_weight**
+   - Write `wsum` to the corresponding cell
+
+## 7. Save and Verify
+
+1. Save the updated `Hawi_GDoUv6_Exec_Progress_Joy.xlsx`.
+
+2. Re-open the file and print a verification comparison table:
+
+   ```
+   Per-UC Battery Adjusted comparison:
+     UC ID                | Wt    |     Previous |    M510_0317 |    Delta
+     --------------------------------------------------------------------
+     AU45A                | 0.025 |        94.60 |        92.30 |    -2.30
+     VS12W                | 0.030 |       264.95 |       258.10 |    -6.85
+     DOUYIN01W            | 0.090 |       286.11 |       280.50 |    -5.61
+     ...
+     DoU Current          | 0.360 |       111.39 |       108.52 |    -2.87
+   ```
+
+3. Confirm the new build label appears in Row 1 at the correct column.
+
+## 8. Complete the Task
+
+1. Use the `attempt_completion` tool to present the final result:
+   - Confirm the new build was appended successfully with formatting
+   - State the column position where the new block starts
+   - Report the number of measured UCs and total weight
+   - Report the new weighted Battery Adjusted (DoU Current) value
+   - Compare with the previous build's DoU Current and highlight any delta
+
+</detailed_sequence_steps>
+
+</task>
+
+---
+
+## Reference: Key File Structures
+
+### Exec Progress File — `DOU_Trend` Sheet Vertical Layout
+
+| Row Range | Content |
+|---|---|
+| Row 1 | Build labels (one per 46-column block, in the Battery Adjusted column) |
+| Row 2 | Column headers |
+| Row 3–31 | Per-UC data (29 UCs) |
+| Row 32 | `DoU Current` — weighted sum |
+| Row 35–63 | KNP Baseline reference |
+| Row 66–94 | Projection target |
+| Row 97–125 | Hawi − Projection delta |
+
+### Weighted Sum Formula
+
+```
+DoU_Current[rail] = Σ (weight_i × value_i)   for all UCs where Battery Adjusted != 0
+```
+
+> **Note**: This is a raw weighted sum, NOT a weighted average. Do not divide by total weight.
+
+### Build Label Convention
+
+```
+M<build_number>_<date>
+Examples:
+  M446_AU205   — Build 00446, AU205 variant
+  M446_0226    — Build 00446, Feb 26 run
+  M510_0317    — Build 00510, Mar 17 run
+```
+
+### Server Path Pattern
+
+```
+\\grilled\ptt_china_la_golden\PT\HAWI\
+  Hawi.LA.1.0-<build_number>-PERF.<variant>\
+    PowerFtrace\
+      SM8975_GDoUv6_Power_Breakdown_template_v2 (Output).xlsx
+```
+
+### Reference Script
+
+Run interactively (will prompt for path and label):
+```cmd
+python Execution/append_build.py
+```
+
+Or with command-line arguments:
+```cmd
+python Execution/append_build.py "<PowerFtrace_path>" <build_label>
