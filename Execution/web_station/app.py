@@ -347,11 +347,34 @@ def download():
                      download_name='Hawi_GDoUv6_Exec_Progress_Joy.xlsx')
 
 
+def create_app():
+    """Entry point for waitress: waitress-serve --call app:create_app"""
+    return app
+
+
 if __name__ == '__main__':
+    import socket
+    PORT = 5000
+    hostname = socket.gethostname()
+    try:
+        local_ip = socket.gethostbyname(hostname)
+    except Exception:
+        local_ip = '127.0.0.1'
+
     print(f"\n{'='*60}")
     print("  DOU Trend Update Workstation")
     print(f"  Target file : {TGT_FILE}")
-    print(f"  Local dir   : {LOCAL_DIR}")
     print(f"{'='*60}")
-    print("  Open http://localhost:5000 in your browser\n")
-    app.run(debug=False, port=5000, host='0.0.0.0')
+    print(f"  Local   : http://localhost:{PORT}")
+    print(f"  Network : http://{local_ip}:{PORT}")
+    print(f"  Share the Network URL with your team members.")
+    print(f"{'='*60}\n")
+
+    try:
+        from waitress import serve
+        print("  Using waitress (production server)\n")
+        serve(app, host='0.0.0.0', port=PORT, threads=4)
+    except ImportError:
+        print("  waitress not installed — using Flask dev server")
+        print("  Run: pip install waitress   for production use\n")
+        app.run(debug=False, port=PORT, host='0.0.0.0')
